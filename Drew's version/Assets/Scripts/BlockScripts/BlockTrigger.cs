@@ -7,7 +7,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-
+// block trigger class for handling class behaviour
 public class BlockTrigger : MonoBehaviour {
 	
 	// the orignal block list.
