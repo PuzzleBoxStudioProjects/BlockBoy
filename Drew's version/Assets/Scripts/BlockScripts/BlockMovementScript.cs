@@ -30,4 +30,5 @@ public class BlockMovementScript : MonoBehaviour {
 		}
 	}
 	
+	//Debug.DrawRay(originOfRay, directionOfRay * distanceToCast, Color.blue);
 }

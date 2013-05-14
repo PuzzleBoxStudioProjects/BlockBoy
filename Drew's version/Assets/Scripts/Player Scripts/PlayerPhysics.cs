@@ -100,16 +100,17 @@ public class PlayerPhysics : MonoBehaviour
         Ray ray;
         RaycastHit hitInfo;
 
-        ray = new Ray(transform.position, transform.forward * faceDir);
-
+		//detect surface below character
         if (Physics.Raycast(transform.position, -transform.up, out hitInfo, deltaGround))
         {
             isGrounded = true;
             //isRotating = false;
             //isFallingOff = false;
-
+			
+			//log the surface normal
             groundNormal = hitInfo.normal;
             
+			//jump along the surface normal
             if (Input.GetButtonDown("Jump"))
             {
                 rigidbody.velocity += jumpForce * groundNormal;
@@ -119,11 +120,13 @@ public class PlayerPhysics : MonoBehaviour
         {
             isGrounded = false;
         }
-
- 
-        //check for wall
+		
+		ray = new Ray(transform.position, transform.forward * faceDir);
+        
+		//check for wall
         if (Physics.Raycast(ray, out hitInfo, wallCheckDistance))
         {
+			//log surface normal
             surfaceNormal = hitInfo.normal;
 
             isRotating = true;
@@ -134,14 +137,16 @@ public class PlayerPhysics : MonoBehaviour
             //rigidbody.velocity += jumpForce * myForward;
         }
 
-        float halfPlayerWidth = characterWidth * 0.5f;
-
+//        float halfPlayerWidth = characterWidth * 0.5f;
+		
+		//ray origins
         Vector3 originLeft = transform.position + transform.forward * 0.5f;
         Vector3 originRight = transform.position - transform.forward * 0.5f;
 
 
         if (isGrounded)
         {
+			//check if on edge on left or right side of character
             if (!Physics.Raycast(originLeft, -transform.up, out hitInfo, deltaGround))
             {
                 isFallingOff = true;
@@ -158,19 +163,24 @@ public class PlayerPhysics : MonoBehaviour
                 //rotationDirection = 0;
             }
         }
-        Vector3 originalPos = transform.position;
+		
+		//log last position
+        Vector3 lastPos = transform.position;
         //Quaternion originalRot = transform.rotation;
-
+		
+		//variable to push the character down a bit to get onto the side of the wall
         Vector3 newPos = transform.TransformPoint(Vector3.down * 0.7f);
-
+		
         if (isFallingOff)
         {
             Vector3 myUp = Vector3.Cross(-transform.right, groundNormal);
             Quaternion newRot = Quaternion.LookRotation(myUp, groundNormal);
             //Vector3 myForward = Vector3.Cross(-transform.forward, groundNormal);
             //newRot = Quaternion.LookRotation(myForward, groundNormal);
-                
-            transform.position = Vector3.Lerp(originalPos, newPos, rotateSpeed);
+            
+			//move to new position
+            transform.position = Vector3.Lerp(lastPos, newPos, rotateSpeed);
+			//rotate to surface
             transform.rotation = Quaternion.Lerp(transform.rotation, newRot, rotateSpeed);
             //transform.eulerAngles = new Vector3(Mathf.LerpAngle(transform.eulerAngles.x, myForward * rotationDirection, rotateSpeed), 0, 0);
             //transform.rotation = Quaternion.Lerp(transform.rotation, newRot, rotateSpeed * rotationDirection);
