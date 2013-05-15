@@ -16,8 +16,7 @@ public class PlayerFollow : MonoBehaviour
     	
 	void LateUpdate ()
     {
-        transform.position = player.transform.position;
-        //transform.rotation = Quaternion.LookRotation(transform.forward * playerPhysics.faceDir);
-        //transform.eulerAngles = new Vector3(player.transform.eulerAngles.x, Mathf.LerpAngle(transform.eulerAngles.y, rotationAngle, 10 * playerPhysics.faceDir), player.transform.eulerAngles.z);
+		//rotate to face direction
+		transform.localRotation = Quaternion.LookRotation(Vector3.forward * playerPhysics.FaceDirection());
 	}
 }

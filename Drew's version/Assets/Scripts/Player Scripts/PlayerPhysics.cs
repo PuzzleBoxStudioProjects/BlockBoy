@@ -3,46 +3,31 @@ using System.Collections;
 
 public class PlayerPhysics : MonoBehaviour
 {
-    public float moveSpeed         = 10.0f;
+   public float moveSpeed         = 10.0f;
     public float jumpForce         = 10.0f;
 
     public float wallCheckDistance = 5.0f;
     public float rotateSpeed       = 10.0f;
     public float deltaGround       = 0.3f;
-    
+	
     public float gravity          = 40.0f;
     public float terminalVelocity = 38.0f;
 
     public bool isGrounded   = false;
-    public bool isRotating   = false;
-    public bool isFallingOff = false;
+    private bool hasHitWall   = false;
+    private bool isFallingOff = false;
+	private bool isJumping = false;
 
-    public int rotationDirection = 1;
+    private int faceDir = 1;
 
-    public int faceDir = 1;
-    //public int tempRotCount = 0;
-
-    private float characterHeight;  //height of bounding box collider
-    private float characterWidth;  //width of bounding box collider
-    //public float verticalVelocity;
-    //public float distGround;
-    
-    //private Vector3 moveVector = Vector3.zero;
-
-    public Vector3 groundNormal;
-    public Vector3 myForward;
-    //private Vector3 myTurnForward;
-    public Vector3 surfaceNormal;
-
+    private Vector3 groundNormal;
+    private Vector3 myForward;
+    private Vector3 surfaceNormal;
+	private Vector3 moveDir;
+	
     private PlayerMotor playerMotor;
-
-    //getters and setters
-    public bool IsGrounded() { return isGrounded; }
-    //public int FaceDirection() { return faceDir; }
-
-    public bool IsDead { get; set; }
-
-    public Quaternion newRot;
+	
+	public int FaceDirection() { return faceDir; }
 
     void Awake()
     {
@@ -53,467 +38,121 @@ public class PlayerPhysics : MonoBehaviour
     void Start()
     {
         surfaceNormal = transform.up;
-        CalculateBounds();
-    }
-
-    void CalculateBounds()
-    {
-        //distGround = collider.bounds.extents.y - collider.bounds.center.y;
-        characterHeight = collider.bounds.size.y;
-        characterWidth = collider.bounds.size.z;
-    }
-
-    void Update()
-    {
-        //if (isRotating)
-        //{
-        //    return;
-        //}
-        //GetMotionInput();
-
-        //take control from player once dead
-        if (IsDead)
-        {
-            playerMotor.RemoveControl();
-        }
-
-        //ApplyGravity();
-        //DetectWall();
-        //RotateToSurface();
     }
 
     void FixedUpdate()
     {
-        NewPhysics();
-        //ApplyGravity();
+        MotorPhysics();
     }
-
-    void NewPhysics()
+	
+    void MotorPhysics()
     {
         float dir = Input.GetAxisRaw("Horizontal");
-
+				
         if (dir != 0)
         {
             faceDir = (int)dir;
         }
-
+		
         Ray ray;
         RaycastHit hitInfo;
 
-		//detect surface below character
+		//detect ground
         if (Physics.Raycast(transform.position, -transform.up, out hitInfo, deltaGround))
         {
-            isGrounded = true;
-            //isRotating = false;
-            //isFallingOff = false;
-			
-			//log the surface normal
+           isGrounded = true;
+
             groundNormal = hitInfo.normal;
-            
-			//jump along the surface normal
-            if (Input.GetButtonDown("Jump"))
-            {
-                rigidbody.velocity += jumpForce * groundNormal;
-            }
         }
         else
         {
             isGrounded = false;
         }
-		
+	
 		ray = new Ray(transform.position, transform.forward * faceDir);
-        
-		//check for wall
+		
+        //check for wall
         if (Physics.Raycast(ray, out hitInfo, wallCheckDistance))
         {
-			//log surface normal
             surfaceNormal = hitInfo.normal;
 
-            isRotating = true;
+            hasHitWall = true;
         }
         else
         {
-            isRotating = false;
-            //rigidbody.velocity += jumpForce * myForward;
+            hasHitWall = false;
         }
 
-//        float halfPlayerWidth = characterWidth * 0.5f;
-		
 		//ray origins
         Vector3 originLeft = transform.position + transform.forward * 0.5f;
         Vector3 originRight = transform.position - transform.forward * 0.5f;
-
-
+		
+		Vector3 dirNormal = new Vector3(0, -groundNormal.z, groundNormal.y);
+		
         if (isGrounded)
         {
-			//check if on edge on left or right side of character
+			if (Input.GetButtonDown("Jump"))
+			{
+				rigidbody.AddRelativeForce(Vector3.up * jumpForce);
+				
+				isJumping = true;
+			}
+			
+			if (!isJumping)
+			{
+				moveDir = dirNormal * moveSpeed * dir;
+			}
+			
+			isJumping = false;
+			
+			rigidbody.velocity = moveDir;
+			
+			//check if on edge on left or right
             if (!Physics.Raycast(originLeft, -transform.up, out hitInfo, deltaGround))
-            {
+            {				
                 isFallingOff = true;
-                //rotationDirection = 1;
             }
             else if (!Physics.Raycast(originRight, -transform.up, out hitInfo, deltaGround))
-            {
+            {				
                 isFallingOff = true;
-                //rotationDirection = -1;
             }
             else
             {
                 isFallingOff = false;
-                //rotationDirection = 0;
             }
         }
 		
-		//log last position
-        Vector3 lastPos = transform.position;
-        //Quaternion originalRot = transform.rotation;
-		
 		//variable to push the character down a bit to get onto the side of the wall
-        Vector3 newPos = transform.TransformPoint(Vector3.down * 0.7f);
+        Vector3 newPos = transform.TransformPoint(Vector3.down * 0.5f);
 		
         if (isFallingOff)
         {
             Vector3 myUp = Vector3.Cross(-transform.right, groundNormal);
             Quaternion newRot = Quaternion.LookRotation(myUp, groundNormal);
-            //Vector3 myForward = Vector3.Cross(-transform.forward, groundNormal);
-            //newRot = Quaternion.LookRotation(myForward, groundNormal);
             
-			//move to new position
-            transform.position = Vector3.Lerp(lastPos, newPos, rotateSpeed);
-			//rotate to surface
+			//move the character down and rotate
+            transform.position = Vector3.Lerp(transform.position, newPos, rotateSpeed);
             transform.rotation = Quaternion.Lerp(transform.rotation, newRot, rotateSpeed);
-            //transform.eulerAngles = new Vector3(Mathf.LerpAngle(transform.eulerAngles.x, myForward * rotationDirection, rotateSpeed), 0, 0);
-            //transform.rotation = Quaternion.Lerp(transform.rotation, newRot, rotateSpeed * rotationDirection);
-        }
-            
-            //Quaternion newTargetRot = Quaternion.LookRotation(myForward, -surfaceNormal);
-            //transform.rotation = Quaternion.Lerp(transform.rotation, newTargetRot, rotateSpeed * rotationDirection);
+		}
   
-        if (isRotating)
+        if (hasHitWall)
         {
             myForward = Vector3.Cross(transform.right, surfaceNormal);
             Quaternion targetRot = Quaternion.LookRotation(myForward, surfaceNormal);
             transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, rotateSpeed);
         }
-
-        //rigidbody.AddForce(-gravity * surfaceNormal);
-        rigidbody.AddRelativeForce(gravity * Vector3.down);
-
-        transform.Translate(0, 0, dir * moveSpeed * Time.deltaTime);
-
-        //print(isRotating);
-
-        Debug.DrawRay(originLeft, -transform.up * deltaGround, Color.green);
+		
+		//apply gravity
+		if (!isGrounded)
+		{
+        	rigidbody.AddRelativeForce(Vector3.down * gravity);
+		}
+		
+		Debug.DrawRay(transform.position, (transform.forward * faceDir) * wallCheckDistance, Color.blue);
+		
+		Debug.DrawRay(originLeft, -transform.up * deltaGround, Color.green);
         Debug.DrawRay(originRight, -transform.up * deltaGround, Color.black);
-
-        Debug.DrawRay(transform.position, (transform.forward * faceDir) * wallCheckDistance, Color.blue);
+		
+		Debug.DrawRay(transform.position, -transform.up * deltaGround, Color.red);
     }
-
-    //Vector3 GetBottomCenter()
-    //{
-    //    return collider.bounds.center + collider.bounds.extents.y * -transform.up;
-    //}
-
-    #region Old Code
-    //void LateUpdate()
-    //{
-    //    //UpdateGroundInfo();
-    //}
-
-    //void GetMotionInput()
-    //{
-    //    if (isRotating)
-    //    {
-    //        return;
-    //    }
-
-    //    //myNormal = Vector3.Lerp(myNormal, surfaceNormal, rotateSpeed * Time.deltaTime);
-    //    //myForward = Vector3.Cross(transform.right, surfaceNormal);
-
-    //    //Quaternion targetRot = Quaternion.LookRotation(myForward, surfaceNormal);
-    //    //transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, rotateSpeed);
-
-    //    //transform.Translate(Input.GetAxisRaw("Horizontal") * moveSpeed * Time.deltaTime, 0, 0);
-
-    //    Ray ray;
-    //    RaycastHit hitInfo;
-
-    //    if (Input.GetButtonDown("Jump"))
-    //    {
-    //        Ray rayOrigin = new Ray(transform.position, transform.right);
-
-    //        if (Physics.Raycast(rayOrigin, out hitInfo, wallCheckDistance))
-    //        {
-    //            isRotating = true;
-
-    //        }
-    //        else if (isGrounded)
-    //        {
-    //            rigidbody.velocity += jumpForce * myNormal;
-    //            //verticalVelocity = jumpForce;
-    //        }
-    //    }
-
-    //    //JumpToWall();
-    //    //JumpToWall(hitInfo.point, hitInfo.normal);
-    //    transform.Rotate(0, Input.GetAxisRaw("Horizontal") * rotateSpeed * Time.deltaTime, 0);
-
-    //    ray = new Ray(transform.position, -myNormal);
-
-    //    //if (Physics.Raycast(ray, out hitInfo))
-    //    if (Physics.Raycast(ray, out hitInfo, deltaGround))
-    //    {
-    //        //isGrounded = hitInfo.distance <= distGround + deltaGround;
-    //        surfaceNormal = hitInfo.normal;
-
-    //        //verticalVelocity = 0;  //stop applying gravity
-    //        isGrounded = true;
-    //        //isRotating = false;
-
-    //        if (tempRotCount == 2)
-    //        {
-    //            isRotating = false;
-    //            tempRotCount = 0;
-    //        }
-    //        //rigidbody.isKinematic = false;
-    //    }
-    //    else
-    //    {
-    //        isGrounded = false;
-
-    //        surfaceNormal = Vector3.up;
-    //    }
-
-    //    float lerpSpeed = 10.0f;
-
-    //    myNormal = Vector3.Lerp(myNormal, surfaceNormal, lerpSpeed * Time.deltaTime);
-    //    myForward = Vector3.Cross(transform.right, myNormal);
-
-    //    Quaternion targetRot = Quaternion.LookRotation(myForward, myNormal);
-    //    transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, lerpSpeed * Time.deltaTime);
-
-    //    moveVector = new Vector3(Input.GetAxisRaw("Horizontal") * moveSpeed, 0, 0) * Time.deltaTime;
-    //    transform.Translate(moveVector);
-    //}
-
-    //public void GetMotion(float dir)
-    //{
-    //    if (isRotating)
-    //    {
-    //        return;
-    //    }
-        
-    //    //if pressing a directional key, turn
-    //    if (dir != 0)
-    //    {
-    //        //transform.rotation = Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y * dir, transform.eulerAngles.z);
-    //        //transform.rotation = Quaternion.LookRotation(Vector3.forward * dir);
-    //        faceDir = (int)dir;
-    //    }
-
-    //    //myNormal = Vector3.Lerp(myNormal, surfaceNormal, rotateSpeed * Time.deltaTime);
-    //    //myForward = Vector3.Cross(transform.right, myNormal);
-
-    //    //Quaternion targetRot = Quaternion.LookRotation(myForward, myNormal);
-    //    //transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, rotateSpeed * Time.deltaTime);
-        
-    //    moveVector = new Vector3(dir * moveSpeed, rigidbody.velocity.y, 0) * Time.deltaTime;
-    //    transform.Translate(moveVector);
-
-    //    //moveVector = transform.TransformDirection(transform.right);
-
-    //    //move the character
-    //    //rigidbody.AddRelativeForce(Vector3.right * dir * moveSpeed, ForceMode.Impulse);
-    //    //moveVector = new Vector3(moveSpeed * dir, rigidbody.velocity.y, 0);
-    //    //rigidbody.AddRelativeForce(moveVector * Time.deltaTime, ForceMode.Impulse);
-    //    //rigidbody.velocity = moveVector;
-    //}
-
-    //public void Jump()
-    //{
-    //    Vector3 vel = rigidbody.velocity;
-
-    //    Ray ray;
-    //    RaycastHit hitInfo;
-
-    //    ray = new Ray(transform.position, transform.right);
-
-    //    if (Physics.Raycast(transform.position, transform.right * faceDir, out hitInfo, wallCheckDistance) && !isRotating)
-    //    {
-    //        //JumpToWall(hitInfo.point, hitInfo.normal);
-    //        isRotating = true;
-    //    }
-    //    else if (isGrounded)
-    //    {
-    //        //vel.y = jumpForce;
-    //        //rigidbody.velocity = vel;
-    //        //rigidbody.AddRelativeForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
-    //        //rigidbody.AddRelativeForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
-    //        //rigidbody.velocity += jumpForce * myNormal;
-    //        verticalVelocity = jumpForce;
-    //    }
-    //}
-
-    //void JumpToWall(Vector3 point, Vector3 normal)
-    //void JumpToWall()
-    //{
-    //    isRotating = true;
-    //    //rigidbody.isKinematic = true;
-    //    tempRotCount = 1;
-
-    //    //Vector3 originalPos = transform.position;
-    //    Quaternion originalRot = transform.rotation;
-
-    //    //Vector3 distPos = point + normal * (distGround + 0.5f);
-
-    //    myForward = Vector3.Cross(transform.right, normal);
-    //    Quaternion distRot = Quaternion.LookRotation(myForward, normal);
-
-    //    if (isRotating)
-    //    {
-    //        transform.rotation = Quaternion.RotateTowards(originalRot, distRot, rotateSpeed);
-        
-    //        if (!isGrounded)
-    //        {
-    //            tempRotCount = 2;
-    //        }
-    //    }
-    //    //for (float t = 0.0f; t < 1.0f; )
-    //    //{
-    //    //    t += Time.deltaTime;
-    //    //    transform.rotation = Quaternion.RotateTowards(originalRot, distRot, t);
-    //    //    //transform.position = Vector3.Lerp(originalPos, distPos, rotateSpeed);
-
-    //    //    //yield return new WaitForEndOfFrame();
-    //    //}
-
-    //    myNormal = normal;
-
-       
-    //    //rigidbody.isKinematic = false;
-    //    //isRotating = false;
-    //}
-    #endregion
-
-    void ApplyGravity()
-    {
-        //apply gravity as long as not grounded
-        if (!isGrounded && rigidbody.velocity.y > -terminalVelocity)
-        {
-            rigidbody.AddRelativeForce(Vector3.down * gravity);
-            //rigidbody.AddForce(-gravity * rigidbody.mass * myNormal);
-            //verticalVelocity -= gravity * Time.deltaTime;
-        }
-    }
-
-    void OnCollisionEnter(Collision col)
-    {
-        //check if the character hit something above
-        //if so stop the upwards force on the jump
-        ContactPoint contact = col.contacts[0];
-        Vector3 vel = rigidbody.velocity;
-
-        float checkAbove = Vector3.Angle(contact.normal, -transform.up);
-
-        if (checkAbove < 60)
-        {
-            vel.y = 0;
-            rigidbody.velocity = vel;
-            //verticalVelocity = 0;
-        }
-    }
-
-    //void UpdateGroundInfo()
-    //{
-    //    //detect ground
-    //    //float dist = 0.5f;
-    //    //Vector3 dir = transform.up;
-
-    //    Ray ray;
-
-    //    RaycastHit hitInfo;
-
-    //    ray = new Ray(transform.position, -transform.up);
-
-    //    //if (Physics.Raycast(ray, out hitInfo, distGround + deltaGround))
-    //    if (Physics.Raycast(ray, out hitInfo, deltaGround))
-    //    {
-    //        //isGrounded = hitInfo.distance <= distGround + deltaGround;
-    //        surfaceNormal = hitInfo.normal;
-
-    //        verticalVelocity = 0;  //stop applying gravity
-    //        isGrounded = true;
-
-    //        if (tempRotCount == 2)
-    //        {
-    //            isRotating = false;
-    //            tempRotCount = 0;
-                
-    //        }
-    //    }
-    //    else
-    //    {
-    //        isGrounded = false;
-
-    //        //surfaceNormal = Vector3.up;
-    //    }
-    //}
-
-    //void DetectWall()
-    //{
-    //    RaycastHit hitInfo;
-
-    //    float dist = 0.5f;
-    //    //float radiusCheck = collider.bounds.size.y;
-
-    //    if (Physics.SphereCast(transform.position + transform.up * 1.5f, dist, transform.right * faceDir, out hitInfo, dist) && !isRotating)
-    //    //if (Physics.Raycast(transform.position, transform.right * faceDir, out hitInfo, wallCheckDistance) && !isRotating)
-    //    {
-    //        rotationDirection += 90;  //////////FIND A DIFFERENT WAY TO DO THE INCREMENTING METHOD
-    //        tempRotCount = 1;
-
-    //        //moveVector = hitInfo.normal
-    //        isRotating = true;
-
-    //        //moveVector.x = 0;
-    //    }
-        
-    //    Debug.DrawRay(transform.position, transform.right * wallCheckDistance * faceDir, Color.blue);
-
-    //    //rotationDirection = Mathf.Clamp(rotationDirection, 0, 360);
-        
-    //    if (isRotating)
-    //    {
-    //        //Quaternion localRot = Quaternion.FromToRotation(-transform.up, transform.right) * transform.rotation;
-
-    //        //transform.rotation = Quaternion.RotateTowards(transform.rotation, localRot, rotateSpeed * faceDir);
-    //        //transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(transform.forward), rotateSpeed);
-
-    //        //transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.AngleAxis(rotationDirection * faceDir, transform.forward), rotateSpeed);
-
-    //        transform.eulerAngles = new Vector3(0, 0, Mathf.MoveTowardsAngle(transform.eulerAngles.z, rotationDirection * faceDir, rotateSpeed));
-    //        //transform.rotation = Quaternion.AngleAxis(rotationDirection * faceDir, transform.forward);
-
-    //        if (!isGrounded)
-    //        {
-    //            tempRotCount = 2;
-    //        }
-    //        //isRotating = false;
-    //    }
-        
-    //}
-
-    //void OnTriggerEnter(Collider col)
-    //{
-    //    if (col.transform.tag == "FallOff")
-    //    {
-    //        Vector3 originalPos = transform.position;
-    //        Vector3 newPos = transform.TransformPoint(Vector3.down * 2);
-
-    //        transform.position = Vector3.Lerp(originalPos, newPos, rotateSpeed);
-
-    //        Quaternion targetRot = Quaternion.LookRotation(myForward, -surfaceNormal);
-    //        transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, rotateSpeed);
-    //    }
-    //}
 }
