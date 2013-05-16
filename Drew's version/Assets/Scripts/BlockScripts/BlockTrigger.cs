@@ -19,20 +19,20 @@ public class BlockTrigger : MonoBehaviour {
 	public int blockCount = 0;
 	public bool create = true;
 	public int createRotation;
+	
+		
 	// Use this for initialization
-	void Start () {
+	void Start(){	
 		blocks = new List<GameObject>();
 		AddBlocks ();
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update(){		
 		if(blockTimer != 300){
 			blockTimer++;	
 		}
-		else{
-			//create = true;
-		}
+		
 		
 		if(create){
 			//int blocknum = Random.Range(0,7); uncomment when instantiate the rest of the blocks
@@ -62,6 +62,7 @@ public class BlockTrigger : MonoBehaviour {
 	}
 	public void AddBlocks(){
 		blocks.Add(t0);
+		blockCount++;
 		/*blocks.Add(t1);
 		blocks.Add(t2);
 		blocks.Add(t3);

@@ -2,21 +2,22 @@ using UnityEngine;
 using System.Collections;
 
 public class BlockMovementScript : MonoBehaviour {
-	public float blockSpeed = 5f;
-
+	public float blockSpeed;
+	private Vector2 temptarget;
 	private GameObject target;
 	// Use this for initialization
+	
 	void Start(){
+		blockSpeed = 5f;
 		target = GameObject.FindWithTag("Player");
-		
+		float posZ = target.transform.position.z;
+		float posY = target.transform.position.y;
+		temptarget = new Vector2(posZ,posY);
 	}
 	
 	// Update is called once per frame
 	void Update () {
-	var fwd = transform.TransformDirection(target.transform.position.x,0,0);
-		if(Physics.Raycast(transform.position, fwd,10)){
-			print ("hit");
-		}
+	
 		transform.position =  Vector3.MoveTowards(transform.position, target.transform.position, blockSpeed * Time.deltaTime);
 		
 		
