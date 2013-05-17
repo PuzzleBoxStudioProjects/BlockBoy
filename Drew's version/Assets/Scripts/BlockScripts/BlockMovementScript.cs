@@ -3,16 +3,16 @@ using System.Collections;
 
 public class BlockMovementScript : MonoBehaviour {
 	public float blockSpeed;
-	private Vector2 temptarget;
+	private Vector3 temptarget;
 	private GameObject target;
 	// Use this for initialization
 	
 	void Start(){
 		blockSpeed = 5f;
 		target = GameObject.FindWithTag("Player");
-		float posZ = target.transform.position.z;
-		float posY = target.transform.position.y;
-		temptarget = new Vector2(posZ,posY);
+		float posZ = target.transform.position.z -.5f;
+		float posY = target.transform.position.y -.5f;
+		temptarget = new Vector3(0,posY, posZ);
 	}
 	
 	// Update is called once per frame
