@@ -28,7 +28,8 @@ public class BlockTrigger : MonoBehaviour {
 	}
 	
 	// Update is called once per frame
-	void Update(){		
+	void Update(){	
+		GetCreate(create);
 		if(blockTimer != 300){
 			blockTimer++;	
 		}
@@ -72,5 +73,7 @@ public class BlockTrigger : MonoBehaviour {
 		blocks.Add(t7);*/
 		
 		}
-		
+	public void  GetCreate(bool dcreate){
+		dcreate = create;
+	}
 }
