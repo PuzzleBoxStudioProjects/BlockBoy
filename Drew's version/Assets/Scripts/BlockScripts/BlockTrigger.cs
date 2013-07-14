@@ -8,46 +8,52 @@ using System.Collections;
 using System.Collections.Generic;
 
 // block trigger class for handling class behaviour
-public class BlockTrigger : MonoBehaviour {
+public class BlockTrigger : MonoBehaviour 
+	{
 	
 	// the orignal block list.
 	public List<GameObject> blocks;
 	public GameObject t0; //,t1,t2,t3,t4,t5,t6,t7; //uncomment when ready to reinstantiate the rest of the blocks.
-	
+	public GameObject clone;
 	// handles the creation of the blocks.
 	public float blockTimer = 0f;
 	public int blockCount = 0;
-	public bool create = true;
+	public static bool isLanded = false;
+	public static bool create = true;
 	public int createRotation;
 	
 		
 	// Use this for initialization
-	void Start(){	
+	void Start()
+	{	
+		
 		blocks = new List<GameObject>();
 		AddBlocks ();
 	}
 	
 	// Update is called once per frame
-	void Update(){	
-		GetCreate(create);
-		if(blockTimer != 300){
-			blockTimer++;	
-		}
+	void Update()
+	{	
 		
-		
-		if(create){
+		if(create)
+		{
 			//int blocknum = Random.Range(0,7); uncomment when instantiate the rest of the blocks
 			int blocknum = 0; // earse when instantiate the rest of the blocks go to statement above...
 			GetRotation();
 			float rotX = transform.localRotation.x + createRotation;
 			Quaternion spawnRot = new Quaternion(rotX,0 ,0,0);
 			Vector3 spawnPos = transform.position;
-			Instantiate(blocks[blocknum] as GameObject, spawnPos, spawnRot);
+			clone = Instantiate(blocks[blocknum] as GameObject, spawnPos, spawnRot) as GameObject;
 			create = false;
+		}
+		if (!isLanded){
+			clone.transform.Translate.
 		}
 	
 	}
-	public void GetRotation(){
+	public void GetRotation()
+	
+	{
 			int result = Random.Range (0,3);
 			if(result == 0)
 				createRotation = 0;
@@ -61,9 +67,9 @@ public class BlockTrigger : MonoBehaviour {
 				createRotation = 0;
 			}
 	}
-	public void AddBlocks(){
+	public void AddBlocks()
+	{
 		blocks.Add(t0);
-		blockCount++;
 		/*blocks.Add(t1);
 		blocks.Add(t2);
 		blocks.Add(t3);
@@ -72,8 +78,6 @@ public class BlockTrigger : MonoBehaviour {
 		blocks.Add(t6);
 		blocks.Add(t7);*/
 		
-		}
-	public void  GetCreate(bool dcreate){
-		dcreate = create;
 	}
+	
 }

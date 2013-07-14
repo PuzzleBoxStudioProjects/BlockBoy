@@ -4,18 +4,16 @@ using System.Collections;
 public class BlockMovementScript : MonoBehaviour {
 	public float blockSpeed;
 	private Vector3 temptarget;
-	private GameObject target;
-	private BlockTrigger bt;
-	public bool sendCreate = true;
+	private  GameObject target;
+	
+
 	// Use this for initialization
 	
 	void Start(){
-		bt = GetComponent<BlockTrigger>();
+		
 		blockSpeed = 5f;
 		target = GameObject.FindWithTag("Player");
-		float posZ = target.transform.position.z -.5f;
-		float posY = target.transform.position.y -.5f;
-		temptarget = new Vector3(0,posY, posZ);
+		Vector3 temptarget = new Vector3(0, target.transform.position.y, target.transform.position.z);
 	}
 	
 	// Update is called once per frame
@@ -25,20 +23,20 @@ public class BlockMovementScript : MonoBehaviour {
 		
 		
 	}
-	  void OnCollisionEnter(Collision other) {
+	  void OnCollisionStay(Collision other) {
+		
 		if (other.gameObject.tag == "ground"){
+			this.gameObject.tag = "blocks";
 			blockSpeed = 0;
-			bt.GetCreate(sendCreate);
+			BlockTrigger.create = true;
+			print("hit ground");			
 			
 		}
-		if(other.gameObject.tag == "Player"){
+		else if (other.gameObject.tag == "block"){
+			this.gameObject.tag = "blocks";
 			blockSpeed = 0;
-		
-			bt.GetCreate(sendCreate);
-		}
-		if (other.gameObject.tag == "block"){
-			blockSpeed = 0;
-			bt.GetCreate(sendCreate);
+			BlockTrigger.create = true;
+			print ("hit block");
 		}
 		
 	}
