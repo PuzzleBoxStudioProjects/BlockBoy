@@ -17,7 +17,9 @@ public class HUDScript : MonoBehaviour {
 	public static float fuel,
 						distance,
 						oil;
-	
+
+    public float angle;
+
 	// Use this for initialization
 	
 	void Awake(){
@@ -105,9 +107,14 @@ public class HUDScript : MonoBehaviour {
 	
 	void UpdateGuages(){
 		// handle the oil pin{
-		if(oil == 100){
-			
-		}
+
+        //if(fuel > 0){
+
+        fuelPin.transform.rotation = Quaternion.RotateTowards(transform.rotation, 
+            //angle = Mathf.MoveTowardsAngle(fuelPin.transform.localEulerAngles.y, fuel, fuel * 10 * Time.deltaTime);
+            //fuelPin.transform.localEulerAngles = new Vector3(0, angle + 180, 0);
+            //fuelPin.transform.rotation = Quaternion.AngleAxis(angle, Vector3.up) * transform.rotation;
+        //}
 	}
 	
 	void CheckLights(){
